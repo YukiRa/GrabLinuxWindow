@@ -1,3 +1,5 @@
-1.执行compile_so.sh生成库文件。
-2.sample目录下为库的使用范例。
-3.引入项目只需要头文件grabwindow.h与库文件grabwindow.so。
+upgrade your nvdia driver upper than nvdia-driver-410.
+install cuda from https://developer.nvidia.com/cuda-downloads.
+compile ffmpeg by this config.
+##./configure --enable-gpl --enable-nonfree --enable-libfdk-aac --enable-libx264 --enable-libx265 --enable-filter=delogo --enable-debug --enable-libspeex --enable-shared --enable-pthreads --enable-cuda --enable-cuvid --enable-nvenc --enable-nvdec
+if you meet some question,you can write your confuse here.
