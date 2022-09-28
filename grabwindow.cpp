@@ -11,7 +11,7 @@ void print(const char * fmt,...)
 #endif
 }
 
-static void* Thread_Proc_Linux(void* param)
+void* GrabWindow::Thread_Proc_Linux(void* param)
 {
 	GrabWindow* thrd = (GrabWindow*) param;
 	thrd->Routine();
@@ -57,7 +57,6 @@ void GrabWindow::setSimuRunStat(bool stat)
     {
         if(stat)
         {
-            for_stop = false;
             if(pthread_create(&hThread, NULL, 
             Thread_Proc_Linux, this) < 0)
             {
@@ -137,6 +136,7 @@ void GrabWindow::sw_decode(AVCodecContext *dec_ctx, AVFrame *frame, AVPacket *pk
 
 void GrabWindow::hw_encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,int &frameindex)
 {
+    av_packet_unref(pkt);
     int ret = avcodec_send_frame(enc_ctx,frame);
     if(ret < 0)
     {
@@ -163,14 +163,13 @@ void GrabWindow::hw_encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pk
         if (ret < 0)
         {
             print("send packet failed: %d\n", ret);
+            break;
         }
         else
         {
             print("send %5d packet successfully!\n", frameindex);
         }
-        av_packet_unref(pkt);
     }
-
 }
 
 int GrabWindow::Routine()
@@ -272,17 +271,23 @@ int GrabWindow::Routine()
 
 	ret = avformat_write_header(out_ctx,NULL);
 	int frameIndex = 0;
+    for_stop = false;
     /// @brief 视频流转码处理
     for(;;)
     {
-        print("---start---\n");
+        print("---start---%d\n",for_stop);
         if(for_stop)
         {
+            print("end loop\n");
             break;
         }
         sw_decode(pCodecCtx,pFrame,packet,videoindex);
         //sws_scale(img_convert_ctx, (const unsigned char* const*)pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameYUV->data, pFrameYUV->linesize);
         hw_encode(context,pFrameYUV,encodepkt,frameIndex);
+        av_frame_unref(pFrame);
+        //av_frame_unref(pFrameYUV);
+        av_packet_unref(packet);
+        av_packet_unref(encodepkt);
     }
     /// @brief 写输出视频文件尾
     av_write_trailer(out_ctx);
@@ -293,8 +298,13 @@ int GrabWindow::Routine()
     av_free(pFrameYUV);
     avcodec_close(pCodecCtx);
     avcodec_close(context);
+    avcodec_free_context(&pCodecCtx);
+    avcodec_free_context(&context);
 	avformat_close_input(&pFormatCtx);
 
+    av_free(pFrame);
+    av_free(packet);
+    av_free(encodepkt);
     print("---end---\n");
     
     return 0;

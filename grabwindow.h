@@ -17,10 +17,6 @@ extern "C"
 /// @param  
 void print(const char * fmt,...);
 
-/// @brief 工作线程
-/// @param param 线程函数
-static void* Thread_Proc_Linux(void* param);
-
 /// @brief 录制窗口
 class GrabWindow
 {
@@ -30,6 +26,10 @@ public:
 
     /// @brief 析构函数
     virtual ~GrabWindow();
+
+    /// @brief 工作线程
+    /// @param param 线程函数
+    static void* Thread_Proc_Linux(void* param);
     
     /// @brief 设置需要抓取的渲染窗口名
     /// @param name 窗口名
