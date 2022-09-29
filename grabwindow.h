@@ -11,6 +11,7 @@ extern "C"
 
 #include <string>
 #include <pthread.h>
+#include <sys/stat.h>
 
 /// @brief 打印log日志
 /// @param fmt 
@@ -51,9 +52,13 @@ public:
     /// @param stat true开始录制
     void setSimuRunStat(bool stat);
 
+    bool GetThreadStat();
+
     /// @brief 线程函数
     /// @return 
     virtual int Routine();
+
+    bool thread_exit;
 private:
     /// @brief 使用xwininfo获取window_id
     void xwininfo();
@@ -102,3 +107,5 @@ private:
     /// @brief 线程
     pthread_t hThread;
 };
+
+bool ExistFile(std::string name);

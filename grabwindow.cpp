@@ -11,10 +11,17 @@ void print(const char * fmt,...)
 #endif
 }
 
+bool ExistFile(std::string name)
+{
+    struct stat buffer;
+    return (stat(name.c_str(),&buffer) == 0);
+}
+
 void* GrabWindow::Thread_Proc_Linux(void* param)
 {
 	GrabWindow* thrd = (GrabWindow*) param;
 	thrd->Routine();
+    thrd->thread_exit = true;
     print("Linux thread out\n");
 	pthread_exit((void *)1);
 }
@@ -24,6 +31,7 @@ GrabWindow::GrabWindow()
     avformat_network_init();
     avdevice_register_all();
     for_stop = false;
+    thread_exit = true;
 }
 
 GrabWindow::~GrabWindow()
@@ -57,14 +65,26 @@ void GrabWindow::setSimuRunStat(bool stat)
     {
         if(stat)
         {
+            while (!thread_exit)
+            {
+                
+            }
+            print("thread start\n");
+
             if(pthread_create(&hThread, NULL, 
             Thread_Proc_Linux, this) < 0)
             {
                 return;
             }
+            thread_exit = false;
             pthread_detach(hThread);
         }
     } 
+}
+
+bool GrabWindow::GetThreadStat()
+{
+    return thread_exit;
 }
 
 void GrabWindow::xwininfo()
@@ -276,9 +296,14 @@ int GrabWindow::Routine()
     for(;;)
     {
         print("---start---%d\n",for_stop);
+        if(!ExistFile(file_name))
+        {
+            print("lose file.\n");
+            break;
+        }
         if(for_stop)
         {
-            print("end loop\n");
+            print("end loop.\n");
             break;
         }
         sw_decode(pCodecCtx,pFrame,packet,videoindex);
