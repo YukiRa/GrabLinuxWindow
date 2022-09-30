@@ -316,20 +316,27 @@ int GrabWindow::Routine()
     }
     /// @brief 写输出视频文件尾
     av_write_trailer(out_ctx);
-    avio_close(out_ctx->pb);
+    
     /// @brief 录制结束 释放资源
-    av_free(out_ctx);
     sws_freeContext(img_convert_ctx);
-    av_free(pFrameYUV);
-    avcodec_close(pCodecCtx);
-    avcodec_close(context);
+
     avcodec_free_context(&pCodecCtx);
     avcodec_free_context(&context);
 	avformat_close_input(&pFormatCtx);
+    
+    avio_closep(&out_ctx->pb);
+    avformat_free_context(out_ctx);
 
-    av_free(pFrame);
-    av_free(packet);
-    av_free(encodepkt);
+    av_frame_free(&pFrame);
+    av_packet_free(&packet);
+    av_frame_free(&pFrameYUV);
+    av_packet_free(&encodepkt);
+
+    free(out_buffer);
+    out_buffer = nullptr;
+    free(geometry);
+    geometry = nullptr;
+    
     print("---end---\n");
     
     return 0;
