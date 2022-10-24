@@ -52,6 +52,12 @@ public:
     /// @param stat true开始录制
     void setSimuRunStat(bool stat);
 
+    /// @brief 设置抓取时与生成视频文件的帧率。
+    /// @param rate 帧率 
+    void setFrameRate(int rate);
+
+    /// @brief 线程结束状态
+    /// @return true:结束 false:运行中
     bool GetThreadStat();
 
     /// @brief 线程函数
@@ -82,7 +88,7 @@ private:
      * @param pkt 编码后的视频流
      * @param frameindex 帧序号
      */
-    void hw_encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,int &frameindex);
+    void hw_encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,long &frameindex);
 private:
     /// @brief 录制的窗口名
     std::string window_name;
@@ -104,6 +110,8 @@ private:
     AVFrame *pFrameYUV;
     /// @brief 控制输入流转码结束
     bool for_stop;
+    /// @brief 帧率
+    int i_framerate; 
     /// @brief 线程
     pthread_t hThread;
 };

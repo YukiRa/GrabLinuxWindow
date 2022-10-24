@@ -32,6 +32,7 @@ GrabWindow::GrabWindow()
     avdevice_register_all();
     for_stop = false;
     thread_exit = true;
+    i_framerate = 60;
 }
 
 GrabWindow::~GrabWindow()
@@ -82,6 +83,11 @@ void GrabWindow::setSimuRunStat(bool stat)
     } 
 }
 
+void GrabWindow::setFrameRate(int rate)
+{
+    i_framerate = rate;
+}
+
 bool GrabWindow::GetThreadStat()
 {
     return thread_exit;
@@ -112,6 +118,9 @@ void GrabWindow::getinput()
 	av_dict_set(&options,"video_size",video_size,0);
     /// @warning 必须设置 以此获取窗口
 	av_dict_set(&options,"window_id",window_id,0);
+    char str_framerate[5];
+    sprintf(str_framerate,"%d",i_framerate);
+    av_dict_set(&options,"framerate",str_framerate,0);
 	const AVInputFormat *ifmt=av_find_input_format("x11grab");
     if(avformat_open_input(&pFormatCtx,NULL,ifmt,&options)!=0){
 		print("Couldn't open input stream.\n");
@@ -154,7 +163,7 @@ void GrabWindow::sw_decode(AVCodecContext *dec_ctx, AVFrame *frame, AVPacket *pk
     }
 }
 
-void GrabWindow::hw_encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,int &frameindex)
+void GrabWindow::hw_encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,long &frameindex)
 {
     av_packet_unref(pkt);
     int ret = avcodec_send_frame(enc_ctx,frame);
@@ -177,7 +186,7 @@ void GrabWindow::hw_encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pk
         }
         /// @brief 计算帧率 否则编码后的视频无法解析帧率
         pkt->pts=pkt->dts=frameindex*(out_ctx->streams[0]->time_base.den)
-                                    /out_ctx->streams[0]->time_base.num/25;
+                                    /out_ctx->streams[0]->time_base.num/i_framerate;
         frameindex++;
         ret = av_interleaved_write_frame(out_ctx,pkt);
         if (ret < 0)
@@ -267,9 +276,9 @@ int GrabWindow::Routine()
 	context->width = geometry->width;
 	context->height = geometry->height;
 	int64_t bitrate = geometry->width*geometry->height;
-	context->bit_rate = bitrate*20*24;		//比特率 控制画质
-	context->time_base = (AVRational){1,30};
-	context->framerate = (AVRational){30,1};
+	context->bit_rate = bitrate*20*25;		//比特率 控制画质
+	context->time_base = (AVRational){1,i_framerate};
+	context->framerate = (AVRational){i_framerate,1};
 	context->gop_size = 10;
 	context->pix_fmt = AV_PIX_FMT_YUV420P;
 
@@ -290,7 +299,7 @@ int GrabWindow::Routine()
 	avio_open(&out_ctx->pb,file_name.c_str(),AVIO_FLAG_WRITE);
 
 	ret = avformat_write_header(out_ctx,NULL);
-	int frameIndex = 0;
+	long frameIndex = 0;
     for_stop = false;
     /// @brief 视频流转码处理
     for(;;)
@@ -333,9 +342,7 @@ int GrabWindow::Routine()
     av_packet_free(&encodepkt);
 
     free(out_buffer);
-    out_buffer = nullptr;
     free(geometry);
-    geometry = nullptr;
     
     print("---end---\n");
     
