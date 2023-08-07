@@ -1,5 +1,6 @@
 #include "grabwindow.h"
 #include <iostream>
+#include <memory>
 
 void print(const char *fmt, ...)
 {
@@ -19,7 +20,9 @@ bool ExistFile(std::string name)
 
 void *GrabWindow::Thread_Proc_Linux(void *param)
 {
-    GrabWindow *thrd = (GrabWindow *)param;
+    //GrabWindow *thrd = (GrabWindow *)param;
+    std::shared_ptr<GrabWindow> gw((GrabWindow *)param);
+    GrabWindow *thrd = gw.get();
     thrd->Routine();
     thrd->thread_exit = true;
     print("Linux thread out\n");
